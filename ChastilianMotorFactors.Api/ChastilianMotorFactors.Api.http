@@ -1,0 +1,6 @@
+@ChastilianMotorFactors.Api_HostAddress = http://localhost:5009
+
+GET {{ChastilianMotorFactors.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

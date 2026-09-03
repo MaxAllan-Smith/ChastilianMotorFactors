@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="ChastilianMotorFactors.Api/ChastilianMotorFactors.Api.csproj" />
+  <Project Path="ChastilianMotorFactors.Application/ChastilianMotorFactors.Application.csproj" />
+  <Project Path="ChastilianMotorFactors.Domain/ChastilianMotorFactors.Domain.csproj" />
+  <Project Path="ChastilianMotorFactors.Infrstructure/ChastilianMotorFactors.Infrstructure.csproj" />
+</Solution>
