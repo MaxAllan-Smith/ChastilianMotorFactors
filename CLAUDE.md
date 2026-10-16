@@ -4,7 +4,7 @@
 
 For language, build tooling and architecture, this file overrides the global RSPS/Kotlin/Gradle instructions: use C# and the `dotnet` CLI. The global rules on safety, documentation and protecting existing work still apply.
 
-The project is in early scaffolding: no features, persistence or error-handling conventions exist yet. The first implementation of each sets the pattern; keep it simple and mention the choice in the summary.
+The project is in early scaffolding: logging (Serilog), the mediator (Cortex.Mediator) and EF Core are wired up, but no features, entities or error-handling conventions exist yet. The first implementation of each sets the pattern; keep it simple and mention the choice in the summary.
 
 ## Architecture (mandatory)
 
@@ -22,7 +22,7 @@ Layers and allowed references:
 - Api references Infrastructure only for `AddInfrastructure(...)` in `Program.cs`. Controllers use Application types only.
 - Each layer registers its own services in its `DependencyInjection.cs` (`AddApplication()`, `AddInfrastructure(configuration)`); `Program.cs` only calls these.
 - Domain entities never cross the API boundary; controllers map to and from API contracts / application DTOs.
-- An interface belongs in Application only when Infrastructure implements it, or when there is a real second implementation or test seam. Don't add interfaces, repositories, mediators or base classes speculatively.
+- An interface belongs in Application only when Infrastructure implements it, or when there is a real second implementation or test seam. Don't add interfaces, repositories or base classes speculatively.
 - New NuGet packages, projects or layers need a clear reason; ask first for anything architectural.
 
 ## Code organisation and style
@@ -40,7 +40,9 @@ Layers and allowed references:
 - **Errors:** use exceptions for unexpected failures, not control flow. Return `ProblemDetails` with consistent status codes (`400` validation, `404` not found, `409` conflict). Never leak stack traces or internals in responses.
 - **Logging:** use injected `ILogger<T>` with structured message templates; never log secrets or personal data. Serilog is the provider, configured only in `Program.cs` (bootstrap logger, `AddSerilog`, `UseSerilogRequestLogging`). Levels and sinks live in the `Serilog` section of `appsettings*.json`, not `Logging`. Other layers must not reference Serilog.
 - **API design:** RESTful routes, plural resource names, correct verbs and status codes (`201` + location for creates). Don't change existing routes or contracts without being asked; that breaks clients.
-- **Persistence (when added):** lives in Infrastructure only; any migrations are generated and named deliberately, never edited after being applied.
+- **Mediator:** use Cortex.Mediator, never MediatR (no longer free). Controllers inject `IMediator` and send commands (`ICommand<T>` + `ICommandHandler<,>`) or queries (`IQuery<T>` + `IQueryHandler<,>`). Requests and their handlers live together in the Application feature folder. `AddApplication()` scans the Application assembly, so handlers need no manual registration. No pipeline behaviors are registered yet.
+- **Persistence:** EF Core with SQL Server, in Infrastructure only. `Infrastructure/Persistence/ApplicationDbContext.cs` applies every `IEntityTypeConfiguration<T>` in the assembly; add one per entity in `Persistence/Configurations/`. The connection string is `ConnectionStrings:Database`: Development uses LocalDB via `appsettings.Development.json`, and production must set it in Azure App Service configuration or startup fails. Generate and name migrations deliberately, and never edit them after they're applied:
+  `dotnet ef migrations add <Name> --project ChastilianMotorFactors.Infrastructure --startup-project ChastilianMotorFactors.Api --output-dir Persistence/Migrations`
 
 ## Security and configuration
 
