@@ -63,12 +63,14 @@ The repo uses git-flow (AVH edition), initialised with `master` (production, dep
 
 - Branch names: short kebab-case (e.g. `feature/serilog-logging`); release/hotfix names are versions (e.g. `1.2.0`).
 - Never commit directly to `master` or `develop`. Before starting work, check the current branch; if on `develop` with no feature branch, start one.
-- Completing a feature or bugfix branch, once the build and tests pass:
+- `develop` and `master` are protected on GitHub: changes reach them only through a pull request (no approvals needed, but review threads must be resolved). Direct pushes are rejected. **Never run `git flow <type> finish` for feature or bugfix branches.** It merges locally and deletes the remote branch, then the push to `develop` is rejected, leaving the work only on the local machine.
+- Completing a feature or bugfix branch, once the build and tests pass locally:
   1. Commit the changes on the branch.
   2. Push the branch: `git flow <type> publish <name>` the first time, then `git push`.
-  3. `git flow <type> finish <name>`. This merges into `develop` and deletes the local and remote branch.
-  4. `git push origin develop`, so the merge reaches the remote. The remote branch is already deleted, so skipping this leaves the work only on the local machine.
-- Releases and hotfixes (`finish` merges to `master`, which deploys to Azure) and tagging happen only when explicitly asked.
+  3. Open a PR into `develop`: `gh pr create --base develop --fill`.
+  4. Wait for CI to pass (`gh pr checks <number> --watch`) and resolve any review threads, then merge: `gh pr merge <number> --merge --delete-branch`. Use a merge commit to keep the git-flow history.
+  5. Sync locally: `git checkout develop`, `git pull --ff-only`, then `git branch -d <type>/<name>` if the branch still exists.
+- Releases and hotfixes go to `master`, which deploys to Azure, so they also go through PRs. They happen only when explicitly asked, as does tagging.
 
 ## Workflow
 
