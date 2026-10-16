@@ -1,6 +1,6 @@
 # ChastilianMotorFactors
 
-.NET 10 ASP.NET Core Web API (controllers), Clean Architecture + SOLID. Work happens on `develop`; pushes to `master` deploy to Azure.
+.NET 10 ASP.NET Core Web API (controllers), Clean Architecture + SOLID. Branching follows git-flow (see below); pushes to `master` deploy to Azure.
 
 For language, build tooling and architecture, this file overrides the global RSPS/Kotlin/Gradle instructions: use C# and the `dotnet` CLI. The global rules on safety, documentation and protecting existing work still apply.
 
@@ -47,6 +47,21 @@ Layers and allowed references:
 - No secrets in `appsettings*.json` or source. Use user-secrets locally and Azure App Service configuration in production.
 - Bind settings with the options pattern in the layer that uses them.
 - Don't edit `.github/workflows/` or the Azure service-dependency files in `ChastilianMotorFactors.Api/Properties/` (`ServiceDependencies/`, `serviceDependencies*.json`) unless asked.
+
+## Git flow (mandatory)
+
+The repo uses git-flow (AVH edition), initialised with `master` (production, deploys to Azure), `develop` (integration) and the default prefixes (`feature/`, `bugfix/`, `release/`, `hotfix/`, `support/`). Always use `git flow` commands for branch lifecycle; never create, merge or delete these branches with plain `git branch`/`checkout -b`/`merge`.
+
+| Work | Start | Finish |
+|---|---|---|
+| New feature | `git flow feature start <name>` | `git flow feature finish <name>` |
+| Non-urgent fix (from `develop`) | `git flow bugfix start <name>` | `git flow bugfix finish <name>` |
+| Release | `git flow release start <version>` | `git flow release finish <version>` |
+| Urgent production fix (from `master`) | `git flow hotfix start <version>` | `git flow hotfix finish <version>` |
+
+- Branch names: short kebab-case (e.g. `feature/serilog-logging`); release/hotfix names are versions (e.g. `1.2.0`).
+- Never commit directly to `master` or `develop`. Before starting work, check the current branch; if on `develop` with no feature branch, start one.
+- Use `git flow <type> publish <name>` to push a branch. Finishing, publishing, pushing and tagging are outward-facing: only do them when asked.
 
 ## Workflow
 
