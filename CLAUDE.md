@@ -63,7 +63,12 @@ The repo uses git-flow (AVH edition), initialised with `master` (production, dep
 
 - Branch names: short kebab-case (e.g. `feature/serilog-logging`); release/hotfix names are versions (e.g. `1.2.0`).
 - Never commit directly to `master` or `develop`. Before starting work, check the current branch; if on `develop` with no feature branch, start one.
-- Use `git flow <type> publish <name>` to push a branch. Finishing, publishing, pushing and tagging are outward-facing: only do them when asked.
+- Completing a feature or bugfix branch, once the build and tests pass:
+  1. Commit the changes on the branch.
+  2. Push the branch: `git flow <type> publish <name>` the first time, then `git push`.
+  3. `git flow <type> finish <name>`. This merges into `develop` and deletes the local and remote branch.
+  4. `git push origin develop`, so the merge reaches the remote. The remote branch is already deleted, so skipping this leaves the work only on the local machine.
+- Releases and hotfixes (`finish` merges to `master`, which deploys to Azure) and tagging happen only when explicitly asked.
 
 ## Workflow
 
@@ -75,7 +80,8 @@ The repo uses git-flow (AVH edition), initialised with `master` (production, dep
 
 - While iterating, build only the affected project, e.g. `dotnet build ChastilianMotorFactors.Application -v q`
 - Before finishing a code change, build the whole solution: `dotnet build ChastilianMotorFactors.slnx -v q`
-- Tests: NUnit, in `ChastilianMotorFactors.Tests` (solution folder `/test/`; reference the layer projects it tests). Run `dotnet test ChastilianMotorFactors.slnx`. Test Domain and Application logic first. CI does not run these tests yet.
+- Tests: NUnit, in `ChastilianMotorFactors.Tests` (solution folder `/test/`; reference the layer projects it tests). Run `dotnet test ChastilianMotorFactors.slnx`. Test Domain and Application logic first.
+- CI (`.github/workflows/ci.yml`) runs on pushes to `develop`, `feature/**`, `bugfix/**`, `release/**` and `hotfix/**`, and on PRs to `develop`/`master`. It restores, fails on vulnerable NuGet packages (including transitive ones), builds Release and runs the tests. Deployment (`ChastilianMotorFactorsApi.yml`) runs on pushes to `master`: it builds and tests the whole solution, then publishes the Api to Azure. A failing test blocks the deploy.
 - On failure: fix the cause and re-run. Don't weaken tests, suppress warnings or skip checks to get green. If something can't be fixed, report it with the relevant error lines.
 - Never claim a build or test passed unless it ran and succeeded in this session. Documentation-only changes don't need a build.
 - Visual Studio may rewrite `ChastilianMotorFactors.slnx` while it is open. After `dotnet sln` changes, re-read the file to confirm.

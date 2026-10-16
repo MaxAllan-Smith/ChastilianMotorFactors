@@ -3,6 +3,10 @@ on:
   push:
     branches:
     - master
+# Queue deployments so two pushes to master never deploy at the same time.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
 permissions:
   id-token: write
   contents: read
@@ -11,6 +15,7 @@ env:
   AZURE_WEBAPP_PACKAGE_PATH: ChastilianMotorFactors.Api\publish
   CONFIGURATION: Release
   DOTNET_CORE_VERSION: 10.0.x
+  SOLUTION: ChastilianMotorFactors.slnx
   WORKING_DIRECTORY: ChastilianMotorFactors.Api
 jobs:
   build:
@@ -23,11 +28,11 @@ jobs:
       with:
         dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
     - name: Restore
-      run: dotnet restore "${{ env.WORKING_DIRECTORY }}"
+      run: dotnet restore "${{ env.SOLUTION }}"
     - name: Build
-      run: dotnet build "${{ env.WORKING_DIRECTORY }}" --configuration ${{ env.CONFIGURATION }} --no-restore
+      run: dotnet build "${{ env.SOLUTION }}" --configuration ${{ env.CONFIGURATION }} --no-restore
     - name: Test
-      run: dotnet test "${{ env.WORKING_DIRECTORY }}" --no-build
+      run: dotnet test "${{ env.SOLUTION }}" --configuration ${{ env.CONFIGURATION }} --no-build
     - name: Publish
       run: dotnet publish "${{ env.WORKING_DIRECTORY }}" --configuration ${{ env.CONFIGURATION }} --no-build --output "${{ env.AZURE_WEBAPP_PACKAGE_PATH }}"
     - name: Publish Artifacts
