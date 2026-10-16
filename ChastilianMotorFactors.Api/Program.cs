@@ -21,9 +21,11 @@ try
     // Add services to the container.
 
     builder.Services.AddApplication();
-    builder.Services.AddInfrastructure(builder.Configuration);
+    builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
 
     builder.Services.AddControllers();
+    // Account pages (login, registration) used by the authorization server.
+    builder.Services.AddRazorPages();
     // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
     builder.Services.AddOpenApi();
 
@@ -41,9 +43,11 @@ try
 
     app.UseHttpsRedirection();
 
+    app.UseAuthentication();
     app.UseAuthorization();
 
     app.MapControllers();
+    app.MapRazorPages();
 
     app.Run();
 }

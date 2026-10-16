@@ -5,9 +5,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- ASP.NET Core Identity and the OpenIddict server/validation integration need the ASP.NET Core shared framework. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.13" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.13" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.13" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.13" />
+    <PackageReference Include="OpenIddict.AspNetCore" Version="7.7.2" />
+    <PackageReference Include="OpenIddict.EntityFrameworkCore" Version="7.7.2" />
     <!-- Pinned: Microsoft.Data.SqlClient 6.1.7 pulls in 9.0.11, which has known vulnerabilities (GHSA-846f-f764-76mx, GHSA-2fmv-rv2c-59x7). Remove once SqlClient depends on a patched version. -->
     <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
   </ItemGroup>
