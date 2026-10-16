@@ -1,3 +1,11 @@
 <Solution>
-  <Project Path="ChastilianMotorFactors.Api/ChastilianMotorFactors.Api.csproj" />
+  <Folder Name="/src/">
+    <Project Path="ChastilianMotorFactors.Api/ChastilianMotorFactors.Api.csproj" />
+    <Project Path="ChastilianMotorFactors.Application/ChastilianMotorFactors.Application.csproj" />
+    <Project Path="ChastilianMotorFactors.Domain/ChastilianMotorFactors.Domain.csproj" />
+    <Project Path="ChastilianMotorFactors.Infrastructure/ChastilianMotorFactors.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/test/">
+    <Project Path="ChastilianMotorFactors.Tests/ChastilianMotorFactors.Tests.csproj" Id="c8ccaab1-40ad-4c00-a854-15cf65709158" />
+  </Folder>
 </Solution>
