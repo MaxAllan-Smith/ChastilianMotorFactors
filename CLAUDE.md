@@ -4,7 +4,7 @@
 
 For language, build tooling and architecture, this file overrides the global RSPS/Kotlin/Gradle instructions: use C# and the `dotnet` CLI. The global rules on safety, documentation and protecting existing work still apply.
 
-The project is in early scaffolding: logging (Serilog), the mediator (Cortex.Mediator) and EF Core are wired up, but no features, entities or error-handling conventions exist yet. The first implementation of each sets the pattern; keep it simple and mention the choice in the summary.
+The project is in early scaffolding. Logging (Serilog), the mediator (Cortex.Mediator), EF Core and authentication (ASP.NET Core Identity + OpenIddict; see `docs/authentication.md`) are wired up. No business features, domain entities or error-handling conventions exist yet. The first implementation of each sets the pattern; keep it simple and mention the choice in the summary.
 
 ## Architecture (mandatory)
 
@@ -20,6 +20,7 @@ Layers and allowed references:
 - Dependencies point inward only. Never add a reference that breaks the table above.
 - Business rules live in Domain (invariants) or Application (workflows), never in controllers or Infrastructure.
 - Api references Infrastructure only for `AddInfrastructure(...)` in `Program.cs`. Controllers use Application types only.
+  - **Exception, authentication only:** `Api/Identity/` (the OpenID Connect endpoints) and `Api/Pages/Account/` (the account Razor Pages) may use ASP.NET Core Identity, OpenIddict and `Infrastructure/Identity` types (`ApplicationUser`, `AuthServerConstants`) directly. This matches the official samples. Business features never use this exception.
 - Each layer registers its own services in its `DependencyInjection.cs` (`AddApplication()`, `AddInfrastructure(configuration)`); `Program.cs` only calls these.
 - Domain entities never cross the API boundary; controllers map to and from API contracts / application DTOs.
 - An interface belongs in Application only when Infrastructure implements it, or when there is a real second implementation or test seam. Don't add interfaces, repositories or base classes speculatively.
@@ -43,6 +44,8 @@ Layers and allowed references:
 - **Mediator:** use Cortex.Mediator, never MediatR (no longer free). Controllers inject `IMediator` and send commands (`ICommand<T>` + `ICommandHandler<,>`) or queries (`IQuery<T>` + `IQueryHandler<,>`). Requests and their handlers live together in the Application feature folder. `AddApplication()` scans the Application assembly, so handlers need no manual registration. No pipeline behaviors are registered yet.
 - **Persistence:** EF Core with SQL Server, in Infrastructure only. `Infrastructure/Persistence/ApplicationDbContext.cs` applies every `IEntityTypeConfiguration<T>` in the assembly; add one per entity in `Persistence/Configurations/`. The connection string is `ConnectionStrings:Database`: Development uses LocalDB via `appsettings.Development.json`, and production must set it in Azure App Service configuration or startup fails. Generate and name migrations deliberately, and never edit them after they're applied:
   `dotnet ef migrations add <Name> --project ChastilianMotorFactors.Infrastructure --startup-project ChastilianMotorFactors.Api --output-dir Persistence/Migrations`
+  Migrations are not applied automatically, locally or on deploy. Run `dotnet ef database update` with the same `--project`/`--startup-project` arguments, and apply them to Azure SQL before deploying code that needs them.
+- **Authentication:** this app is both the OpenID Connect server (authorization code + PKCE, public clients) and the API. API controllers must use `[Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]`. A plain `[Authorize]` uses the login cookie and redirects to the login page instead of returning `401`. Clients are configured under `AuthServer:Clients`. See `docs/authentication.md` before changing anything auth-related.
 
 ## Security and configuration
 

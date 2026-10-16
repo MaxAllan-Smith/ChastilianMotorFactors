@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>@ViewData["Title"] - Chastilian Motor Factors</title>
+    <style>
+        body { font-family: system-ui, sans-serif; background: #f4f5f7; color: #1f2328; margin: 0; }
+        main { max-width: 24rem; margin: 4rem auto; padding: 2rem; background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0, 0, 0, .15); }
+        h1 { font-size: 1.4rem; margin-top: 0; }
+        label { display: block; margin-top: 1rem; font-weight: 600; }
+        input[type=email], input[type=password] { width: 100%; box-sizing: border-box; padding: .5rem; margin-top: .25rem; border: 1px solid #c9ced6; border-radius: 4px; }
+        .checkbox { display: flex; gap: .5rem; align-items: center; font-weight: normal; }
+        button { margin-top: 1.5rem; width: 100%; padding: .6rem; border: 0; border-radius: 4px; background: #1f6feb; color: #fff; font-size: 1rem; cursor: pointer; }
+        .error, .field-validation-error, .validation-summary-errors { color: #cf222e; font-size: .9rem; }
+        .validation-summary-valid { display: none; }
+    </style>
+</head>
+<body>
+<main>
+    @RenderBody()
+</main>
+</body>
+</html>

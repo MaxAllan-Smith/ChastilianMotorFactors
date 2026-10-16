@@ -1,0 +1,19 @@
+@page
+@{
+    ViewData["Title"] = "Account";
+}
+
+<h1>Chastilian Motor Factors</h1>
+
+@if (User.Identity?.IsAuthenticated == true)
+{
+    <p>Signed in as <strong>@User.Identity.Name</strong>.</p>
+    <form method="post" asp-page="/Account/Logout">
+        <button type="submit">Sign out</button>
+    </form>
+}
+else
+{
+    <p>You are not signed in.</p>
+    <p><a asp-page="/Account/Login">Sign in</a> or <a asp-page="/Account/Register">create an account</a>.</p>
+}
