@@ -45,9 +45,10 @@ jobs:
           commits=$(gh api "repos/$GH_REPO/compare/master...develop" \
             --jq '.commits[] | "- \(.sha[0:7]) \(.commit.message | split("\n")[0])"')
 
-          body=$(printf '%s\n\n%s\n\n%s\n%s\n' \
+          body=$(printf '%s\n\n%s\n\n%s\n\n%s\n%s\n' \
             "Automated weekly release: \`develop\` is $ahead_by commit(s) ahead of \`master\`." \
             "**Merging this PR deploys to Azure.** Use a merge commit, and check CI has passed on \`develop\`." \
+            "Version: a **minor** bump by default. Add the label \`release:major\` or \`release:patch\` before merging to change it. The tag and GitHub Release are created after a successful deploy." \
             "### Commits" \
             "$commits")
 

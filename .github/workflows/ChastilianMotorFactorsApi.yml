@@ -4,6 +4,7 @@ on:
     branches:
     - master
 # Queue deployments so two pushes to master never deploy at the same time.
+# This also keeps version numbers sequential.
 concurrency:
   group: deploy-production
   cancel-in-progress: false
@@ -18,9 +19,64 @@ env:
   SOLUTION: ChastilianMotorFactors.slnx
   WORKING_DIRECTORY: ChastilianMotorFactors.Api
 jobs:
+  # Works out the next SemVer version (vMAJOR.MINOR.PATCH) from the latest tag and the merged PR:
+  # - label release:major / release:minor / release:patch on the PR picks the bump explicitly
+  # - otherwise hotfix/* branches bump PATCH and everything else (e.g. the weekly develop PR) bumps MINOR
+  # If this commit is already tagged (a re-run), that version is reused instead of bumping again.
+  version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      version: ${{ steps.next.outputs.version }}
+      tag: ${{ steps.next.outputs.tag }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+    - name: Determine next version
+      id: next
+      run: |
+        semver_tag='^v[0-9]+\.[0-9]+\.[0-9]+$'
+
+        existing_tag=$(gh api "repos/$GH_REPO/tags" --paginate \
+          --jq ".[] | select(.commit.sha == \"$GITHUB_SHA\") | .name" | grep -E "$semver_tag" | head -n 1 || true)
+        if [ -n "$existing_tag" ]; then
+          echo "Commit is already tagged $existing_tag; reusing it."
+          tag="$existing_tag"
+        else
+          latest_tag=$(gh api "repos/$GH_REPO/tags" --paginate --jq '.[].name' | grep -E "$semver_tag" | sort -V | tail -n 1 || true)
+          latest_tag=${latest_tag:-v0.0.0}
+          IFS=. read -r major minor patch <<< "${latest_tag#v}"
+
+          # The PR whose merge produced this commit (the endpoint also lists other PRs containing it).
+          merged_pr=".[] | select(.merge_commit_sha == \"$GITHUB_SHA\")"
+          labels=$(gh api "repos/$GH_REPO/commits/$GITHUB_SHA/pulls" --jq "$merged_pr | .labels[].name")
+          head_branch=$(gh api "repos/$GH_REPO/commits/$GITHUB_SHA/pulls" --jq "$merged_pr | .head.ref")
+
+          if grep -qx 'release:major' <<< "$labels"; then bump=major
+          elif grep -qx 'release:minor' <<< "$labels"; then bump=minor
+          elif grep -qx 'release:patch' <<< "$labels"; then bump=patch
+          elif [[ "$head_branch" == hotfix/* ]]; then bump=patch
+          else bump=minor
+          fi
+
+          case "$bump" in
+            major) major=$((major + 1)); minor=0; patch=0 ;;
+            minor) minor=$((minor + 1)); patch=0 ;;
+            patch) patch=$((patch + 1)) ;;
+          esac
+          tag="v$major.$minor.$patch"
+          echo "Latest tag $latest_tag, $bump bump (branch '$head_branch') -> $tag"
+        fi
+
+        echo "tag=$tag" >> "$GITHUB_OUTPUT"
+        echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
   build:
     environment: ChastilianMotorFactorsApi_Env
     runs-on: windows-latest
+    needs: version
     steps:
     - uses: actions/checkout@v4
     - name: Setup .NET SDK
@@ -30,7 +86,7 @@ jobs:
     - name: Restore
       run: dotnet restore "${{ env.SOLUTION }}"
     - name: Build
-      run: dotnet build "${{ env.SOLUTION }}" --configuration ${{ env.CONFIGURATION }} --no-restore
+      run: dotnet build "${{ env.SOLUTION }}" --configuration ${{ env.CONFIGURATION }} --no-restore -p:Version=${{ needs.version.outputs.version }}
     - name: Test
       run: dotnet test "${{ env.SOLUTION }}" --configuration ${{ env.CONFIGURATION }} --no-build
     - name: Publish
@@ -61,3 +117,21 @@ jobs:
       with:
         app-name: ${{ env.AZURE_WEBAPP_NAME }}
         package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+  # Tags the deployed commit and creates a GitHub Release, only after a successful deploy.
+  release:
+    runs-on: ubuntu-latest
+    needs: [version, deploy]
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TAG: ${{ needs.version.outputs.tag }}
+    steps:
+    - name: Create tag and GitHub Release
+      run: |
+        if gh release view "$TAG" > /dev/null 2>&1; then
+          echo "Release $TAG already exists; nothing to do."
+          exit 0
+        fi
+        gh release create "$TAG" --target "$GITHUB_SHA" --title "$TAG" --generate-notes

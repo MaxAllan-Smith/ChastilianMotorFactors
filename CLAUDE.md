@@ -72,6 +72,11 @@ The repo uses git-flow (AVH edition), initialised with `master` (production, dep
   5. Sync locally: `git checkout develop`, `git pull --ff-only`, then `git branch -d <type>/<name>` if the branch still exists.
 - Releases and hotfixes go to `master`, which deploys to Azure, so they also go through PRs. They happen only when explicitly asked, as does tagging.
 - Weekly release: `.github/workflows/weekly-release-pr.yml` runs every Sunday at 20:00 UTC (or manually from the Actions tab). If `develop` is ahead of `master` and no such PR is open, it opens a `develop` → `master` PR. A person merges it, with a merge commit; never merge it automatically. It depends on the repo setting "Allow GitHub Actions to create and approve pull requests". Scheduled workflows only run from `master`, the default branch.
+- Versioning: SemVer tags `vMAJOR.MINOR.PATCH` are the only record of the version. Don't add a `<Version>` to project files or bump versions by hand. On each push to `master`, the deploy workflow works out the next version:
+  - PR label `release:major`, `release:minor` or `release:patch` sets the bump.
+  - With no label, `hotfix/*` branches bump PATCH and everything else bumps MINOR. The first release is `v0.1.0`.
+  - The version is stamped into the build (`-p:Version`). After a successful deploy, the commit is tagged and a GitHub Release with generated notes is created.
+  - Re-running the workflow reuses the existing tag. Never create or move `v*` tags manually.
 
 ## Workflow
 
