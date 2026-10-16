@@ -71,6 +71,7 @@ The repo uses git-flow (AVH edition), initialised with `master` (production, dep
   4. Wait for CI to pass (`gh pr checks <number> --watch`) and resolve any review threads, then merge: `gh pr merge <number> --merge --delete-branch`. Use a merge commit to keep the git-flow history.
   5. Sync locally: `git checkout develop`, `git pull --ff-only`, then `git branch -d <type>/<name>` if the branch still exists.
 - Releases and hotfixes go to `master`, which deploys to Azure, so they also go through PRs. They happen only when explicitly asked, as does tagging.
+- Weekly release: `.github/workflows/weekly-release-pr.yml` runs every Sunday at 20:00 UTC (or manually from the Actions tab). If `develop` is ahead of `master` and no such PR is open, it opens a `develop` → `master` PR. A person merges it, with a merge commit; never merge it automatically. It depends on the repo setting "Allow GitHub Actions to create and approve pull requests". Scheduled workflows only run from `master`, the default branch.
 
 ## Workflow
 

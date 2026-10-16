@@ -1,0 +1,58 @@
+# Every Sunday, opens a pull request from develop into master if develop has commits master doesn't.
+# It only opens the PR; merging it (which deploys to Azure) is always a manual decision.
+#
+# Requirements:
+# - Scheduled workflows only run from the default branch (master), so this starts working
+#   once it has been merged into master.
+# - Repo setting "Allow GitHub Actions to create and approve pull requests" must stay enabled.
+name: Weekly release PR
+
+on:
+  schedule:
+    - cron: '0 20 * * 0' # Sundays at 20:00 UTC (GitHub may start scheduled runs a little late)
+  workflow_dispatch: # Allows a manual run from the Actions tab
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: weekly-release-pr
+  cancel-in-progress: false
+
+jobs:
+  open-release-pr:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Open develop -> master PR if develop is ahead
+        run: |
+          ahead_by=$(gh api "repos/$GH_REPO/compare/master...develop" --jq '.ahead_by')
+          if [ "$ahead_by" -eq 0 ]; then
+            echo "develop is not ahead of master; nothing to release."
+            exit 0
+          fi
+
+          # An open develop -> master PR already tracks the latest develop, so don't open another.
+          existing_pr=$(gh pr list --base master --head develop --state open --json number --jq '.[0].number // empty')
+          if [ -n "$existing_pr" ]; then
+            echo "develop is $ahead_by commit(s) ahead; PR #$existing_pr is already open."
+            exit 0
+          fi
+
+          commits=$(gh api "repos/$GH_REPO/compare/master...develop" \
+            --jq '.commits[] | "- \(.sha[0:7]) \(.commit.message | split("\n")[0])"')
+
+          body=$(printf '%s\n\n%s\n\n%s\n%s\n' \
+            "Automated weekly release: \`develop\` is $ahead_by commit(s) ahead of \`master\`." \
+            "**Merging this PR deploys to Azure.** Use a merge commit, and check CI has passed on \`develop\`." \
+            "### Commits" \
+            "$commits")
+
+          gh pr create \
+            --base master \
+            --head develop \
+            --title "Weekly release: develop → master ($(date -u +%Y-%m-%d))" \
+            --body "$body"
